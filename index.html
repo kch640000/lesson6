@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Happy Digital Laundry</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Lexend:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column; three footprints (A, B, C) get "washed clean" as each expert part is finished */
+:root{
+  --bg:#eef3f4; --surface:#ffffff; --fg:#1c272d; --muted:#5f6f76; --line:#d3dde0;
+  --main:#1f6f78; --main-soft:#e0eef0; --warm:#c46a3c; --warm-soft:#f7e9e0;
+  --partA:#1f6f78; --partB:#b8553c; --partC:#3c5f9e;
+  --ok:#2f7d4f; --ok-soft:#e1f1e6; --no:#b54a3a; --no-soft:#f8e4e0; --on:#ffffff; --dirt:#b9c3c6;
+  --font-en:"Lexend","Segoe UI",system-ui,sans-serif;
+  --font-ko:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12191c; --surface:#1b2428; --fg:#e4ecee; --muted:#9cadb3; --line:#2f3d42;
+  --main:#7cc3c9; --main-soft:#1f3438; --warm:#e3a179; --warm-soft:#3a2a21;
+  --partA:#7cc3c9; --partB:#ec9a82; --partC:#93b3ea;
+  --ok:#7fcf9c; --ok-soft:#1f3a2a; --no:#f09a8a; --no-soft:#41241f; --on:#12191c; --dirt:#4a585d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12191c; --surface:#1b2428; --fg:#e4ecee; --muted:#9cadb3; --line:#2f3d42;
+  --main:#7cc3c9; --main-soft:#1f3438; --warm:#e3a179; --warm-soft:#3a2a21;
+  --partA:#7cc3c9; --partB:#ec9a82; --partC:#93b3ea;
+  --ok:#7fcf9c; --ok-soft:#1f3a2a; --no:#f09a8a; --no-soft:#41241f; --on:#12191c; --dirt:#4a585d; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-ko);font-size:17px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;padding-block:16px 48px;display:flex;flex-direction:column;gap:18px}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--main);outline-offset:2px}
+.en{font-family:var(--font-en)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;flex-direction:column}
+.brand b{font-family:var(--font-en);font-weight:600;font-size:1.25rem;line-height:1.2}
+.brand span{color:var(--muted);font-size:.9rem}
+.homebtn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;font-size:.95rem;white-space:nowrap}
+h1{font-size:1.4rem;line-height:1.35;margin:0;text-wrap:balance}
+h2{font-size:1.12rem;margin:0}
+h2 small{color:var(--muted);font-weight:400;font-size:.88rem}
+.note{color:var(--muted);font-size:.93rem;margin:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.feet{display:flex;justify-content:center;gap:clamp(16px,6vw,44px);padding-top:6px}
+.foot{display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--font-en);font-weight:600}
+.foot svg{width:62px;height:84px}
+.foot span{font-size:.85rem}
+.parts{display:grid;grid-template-columns:1fr;gap:12px}
+.pcard{--c:var(--partA);text-align:left;background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--c);
+  border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.pcard .tag{font-family:var(--font-en);font-weight:600;color:var(--c);font-size:.95rem}
+.pcard .t{font-size:1.05rem}
+.pcard .s{color:var(--muted);font-size:.88rem}
+.pcard.done .s{color:var(--ok)}
+.big{border:none;border-radius:14px;background:var(--main);color:var(--on);padding:16px;font-size:1.12rem;width:100%}
+.big.warm{background:var(--warm)}
+.big:disabled{opacity:.45;cursor:default}
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.step{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 2px;font-size:.82rem;line-height:1.25;color:var(--muted)}
+.step b{display:block;font-family:var(--font-en);font-size:.76rem}
+.step[aria-current="true"]{border-color:var(--pc);color:var(--fg);background:var(--soft)}
+.step.done b::after{content:" ✓";color:var(--ok)}
+.parthead{display:flex;gap:10px;align-items:center}
+.badge{font-family:var(--font-en);font-weight:600;color:var(--on);background:var(--pc);border-radius:8px;padding:2px 10px;font-size:.95rem;white-space:nowrap}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.chipbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:.92rem}
+.chipbtn[aria-pressed="true"]{background:var(--soft);border-color:var(--pc)}
+.who{font-family:var(--font-en);font-size:.8rem;font-weight:600;color:var(--pc);background:var(--soft);border-radius:6px;padding:2px 8px;justify-self:start;margin-top:8px}
+.who.hdl{color:var(--main);background:var(--main-soft)}
+.sent{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.sent .n{font-family:var(--font-en);color:var(--muted);font-size:.85rem;padding-top:3px}
+.sent .e{font-family:var(--font-en);font-size:1.06rem;line-height:1.65;min-width:0}
+.sent .e u{text-decoration-color:var(--pc);text-decoration-thickness:3px;text-underline-offset:4px}
+.sent .k{grid-column:2;color:var(--muted);background:var(--soft);border-radius:8px;padding:6px 10px}
+.sent .acts{grid-column:2;display:flex;gap:8px;flex-wrap:wrap}
+.wtag{display:inline-block;font-size:.85rem;background:var(--soft);color:var(--pc);border-radius:6px;padding:0 6px;margin-left:4px;font-family:var(--font-ko)}
+.mini{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:3px 10px;font-size:.85rem}
+.words{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.word{border:1px solid var(--line);background:var(--surface);border-radius:12px;min-height:76px;padding:10px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px}
+.word .we{font-family:var(--font-en);font-weight:500;font-size:1.02rem}
+.word .wk{color:var(--pc);font-size:.96rem}
+.word.flipped{background:var(--soft);border-color:var(--pc)}
+.q{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.q .qt{font-family:var(--font-en);font-weight:500}
+.q .qk{color:var(--muted);font-size:.92rem;margin-top:-6px}
+.q .line{font-family:var(--font-en);background:var(--bg);border-radius:8px;padding:8px 12px;line-height:2}
+.blank{display:inline-block;min-width:70px;border-bottom:2px solid var(--pc);text-align:center;padding:0 6px;font-weight:600;color:var(--pc);line-height:1.5}
+.blank.ok{color:var(--ok);border-color:var(--ok)}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 14px;font-size:1rem}
+.opt.en{font-family:var(--font-en)}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--no);background:var(--no-soft);animation:shake .3s}
+.opt:disabled{opacity:.35;cursor:default}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.fb{font-size:.95rem;min-height:1.4em;margin:0}
+.fb.ok{color:var(--ok)} .fb.no{color:var(--no)}
+.pattern{border:2px solid var(--pc);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.pattern .form{font-family:var(--font-en);font-weight:600;color:var(--pc);font-size:1.15rem}
+.pattern .ex{font-family:var(--font-en)}
+.pattern .exk{color:var(--muted);font-size:.93rem}
+.built{display:flex;flex-wrap:wrap;gap:6px;min-height:46px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--bg);font-family:var(--font-en)}
+.built span{background:var(--soft);border:1px solid var(--pc);border-radius:8px;padding:2px 8px}
+.bridge{background:var(--warm-soft);border-radius:12px;padding:12px 14px;font-size:.98rem}
+.script{background:var(--soft);border-radius:12px;padding:14px 16px;font-size:1.06rem;line-height:1.8}
+.keycard{border:2px solid var(--pc);border-radius:14px;padding:16px;text-align:center;display:flex;flex-direction:column;gap:6px}
+.keycard .ke{font-family:var(--font-en);font-size:1.3rem;font-weight:600;color:var(--pc)}
+.keycard .kx{font-family:var(--font-en);color:var(--muted)}
+.check{display:flex;gap:10px;align-items:flex-start;padding:6px 0;cursor:pointer}
+.check input{width:22px;height:22px;margin-top:3px;accent-color:var(--main);flex:none}
+.nav{display:flex;gap:10px}
+.nav button{flex:1;border-radius:12px;padding:12px;font-size:1.02rem;border:1px solid var(--line);background:var(--surface)}
+.nav .go{background:var(--pc);border-color:var(--pc);color:var(--on)}
+.rbox{--c:var(--partA);border:1px solid var(--line);border-left:6px solid var(--c);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px;background:var(--surface)}
+.rbox h3{margin:0;font-size:1.02rem}
+.rbox h3 span{font-family:var(--font-en);color:var(--c);margin-right:6px}
+.fill{display:flex;flex-direction:column;gap:6px}
+.fill .p.en{font-family:var(--font-en)}
+.vq{display:flex;flex-direction:column;gap:8px}
+.vq .def{font-family:var(--font-en);font-size:1.15rem}
+.meter{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--main);transition:width .3s}
+.poster{border:2px solid var(--main);border-radius:16px;padding:20px;background:var(--main-soft);display:flex;flex-direction:column;gap:10px}
+.poster h3{margin:0;font-family:var(--font-en);color:var(--main);font-size:1.25rem}
+.poster ol{margin:0;padding-left:1.3em;font-family:var(--font-en);font-size:1.08rem;line-height:1.8}
+.poster .hl{color:var(--warm);font-weight:600}
+.typed{width:100%;font:inherit;font-family:var(--font-en);padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.done-hero{text-align:center;align-items:center}
+.done-hero .hr{font-family:var(--font-en);font-weight:600;font-size:1.8rem;color:var(--main)}
+table.gt{width:100%;border-collapse:collapse;font-size:.95rem}
+table.gt th,table.gt td{border:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}
+table.gt th{background:var(--bg);font-weight:400;color:var(--muted)}
+table.gt td.en{font-family:var(--font-en)}
+.tw{overflow-x:auto}
+@media (max-width:480px){.steps{grid-template-columns:repeat(5,1fr)}.step{font-size:.74rem}.step b{font-size:.68rem}}
+@media (prefers-reduced-motion:reduce){.opt.wrong{animation:none}.meter i{transition:none}}
+</style>
+</head><body style="margin:0">
+
+<div class="wrap" id="app"></div>
+
+<script>
+const DATA = {"parts": {"A": {"title": "Happy Digital Laundry는 어떤 곳일까?", "page": "105쪽", "who": "광고", "sents": [["Happy_Digital_Laundry", "Are you worried about your digital footprint?", "당신의 디지털 발자국이 걱정되나요?"], ["Happy_Digital_Laundry", "Do you <u>want to erase</u> it?", "그것을 지우고 싶나요?"], ["Happy_Digital_Laundry", "If you do, visit Happy Digital Laundry.", "그렇다면 Happy Digital Laundry를 방문하세요."], ["Happy_Digital_Laundry", "We can clean your online history.", "저희는 당신의 온라인 기록을 깨끗하게 해 드릴 수 있어요."], ["Happy_Digital_Laundry", "<u>Leave</u> a message on our website, <u>and</u> we'll help you soon.", "저희 웹사이트에 메시지를 남기세요. 그러면 곧 도와드릴게요."]], "words": [["digital", "디지털의"], ["laundry", "세탁소, 빨래"], ["footprint", "발자국"], ["worried", "걱정하는"], ["erase", "지우다"], ["visit", "방문하다"], ["history", "기록"], ["clean", "깨끗하게 하다"], ["leave", "남기다"], ["website", "웹사이트"]], "grammar": {"patterns": [{"form": "want to + 동사원형", "mean": "~하고 싶다", "ex": "Do you want to erase it?", "exk": "그것을 지우고 싶나요?"}, {"form": "명령문, and ~", "mean": "~해라, 그러면 ~할 것이다", "ex": "Leave a message, and we'll help you soon.", "exk": "메시지를 남기세요, 그러면 곧 도와드릴게요."}], "build": [{"k": "그것을 지우고 싶나요?", "t": ["Do you", "want", "to", "erase", "it?"]}, {"k": "메시지를 남기세요, 그러면 우리가 도와줄게요.", "t": ["Leave", "a message,", "and", "we'll help", "you."]}], "choose": [{"k": "나는 내 사진을 지우고 싶다.", "pre": "I want", "post": "my photo.", "a": "to erase", "o": ["to erase", "erase", "erasing"]}, {"k": "열심히 공부해라, 그러면 시험에 통과할 것이다.", "pre": "Study hard,", "post": "you will pass the test.", "a": "and", "o": ["and", "or", "but"]}], "bridge": "want to 사이에 사람이 들어가면 want + 사람 + to (~가 …하기를 원하다)가 돼요. B, C 파트 전문가에게 들어 보세요!"}, "qs": [{"q": "Happy Digital Laundry washes your clothes.", "k": "Happy Digital Laundry는 옷을 빨아 준다. (T/F)", "line": "___", "blanks": [{"a": "False", "o": ["True", "False"]}]}, {"q": "What can Happy Digital Laundry clean?", "k": "Happy Digital Laundry는 무엇을 깨끗하게 해 주나요?", "line": "They can clean your ___ .", "blanks": [{"a": "online history", "o": ["online history", "clothes", "smartphone", "room"]}]}], "script": "우리 파트는 Happy Digital Laundry 광고야. 이곳은 옷을 빠는 세탁소가 아니라, 인터넷에 남은 내 흔적인 '디지털 발자국'을 지워 주는 곳이야. 웹사이트에 메시지를 남기면 곧 도와준대.", "key": "want to erase", "keyk": "~을 지우고 싶다", "keyx": "Do you want to erase it?"}, "B": {"title": "Bella의 사연: 퍼져 버린 사진", "page": "106쪽", "who": "Bella", "sents": [["remove_all_plz", "Hi, I'm Bella. Last Friday, I <u>saw my brother playing</u> basketball after school.", "안녕하세요, 저는 Bella예요. 지난 금요일, 저는 남동생이 방과 후에 농구를 하고 있는 것을 보았어요."], ["remove_all_plz", "He was playing really well, so I took a picture of him.", "그는 정말 잘했고, 그래서 저는 그의 사진을 찍었어요."], ["remove_all_plz", "Then I shared it on my social media.", "그리고 저는 그것을 제 SNS에 공유했어요."], ["remove_all_plz", "Over the weekend, something went wrong.", "주말 동안 무언가 잘못되었어요."], ["remove_all_plz", "Someone made a copy of the picture with bad comments.", "누군가 나쁜 댓글을 단 그 사진의 복사본을 만들었어요."], ["remove_all_plz", "The copy was spread here and there, and I was so embarrassed.", "그 복사본은 여기저기 퍼졌고, 저는 정말 당황했어요."], ["remove_all_plz", "My brother <u>wanted me to delete</u> the picture of him.", "남동생은 제가 그의 사진을 삭제하기를 원했어요."], ["remove_all_plz", "I apologized to him, and I deleted my post immediately.", "저는 그에게 사과했고, 즉시 제 게시물을 삭제했어요."], ["remove_all_plz", "However, the copies still remain online.", "하지만 복사본들이 아직 온라인에 남아 있어요."], ["remove_all_plz", "I want to remove them all. Please help me.", "저는 그것들을 모두 없애고 싶어요. 저를 도와주세요."], ["Happy_Digital_Laundry", "We removed all the copies online, but some copies may remain on personal devices.", "우리는 온라인의 복사본을 모두 없앴지만, 일부는 개인 기기에 남아 있을 수도 있어요."], ["Happy_Digital_Laundry", "If you see the copies again, please contact us.", "만약 복사본을 다시 보게 되면, 우리에게 연락해 주세요."], ["Happy_Digital_Laundry", "When you share things online, be careful.", "온라인에 무언가를 공유할 때는 조심하세요."], ["Happy_Digital_Laundry", "Remember that sharing something online is easy, but removing it is hard.", "온라인에 무언가를 공유하는 것은 쉽지만, 그것을 없애는 것은 어렵다는 것을 기억하세요."]], "words": [["take a picture", "사진을 찍다"], ["share", "공유하다"], ["social media", "SNS"], ["copy", "복사본"], ["comment", "댓글"], ["spread", "퍼뜨리다, 퍼지다"], ["embarrassed", "당황한"], ["delete", "삭제하다"], ["apologize", "사과하다"], ["immediately", "즉시"], ["remain", "남아 있다"], ["remove", "없애다"], ["personal", "개인의"], ["device", "기기"], ["contact", "연락하다"]], "grammar": {"patterns": [{"form": "see + 사람 + 동사ing", "mean": "~가 …하고 있는 것을 보다", "ex": "I saw my brother playing basketball.", "exk": "나는 남동생이 농구를 하고 있는 것을 보았다."}, {"form": "want + 사람 + to + 동사원형", "mean": "~가 …하기를 원하다", "ex": "My brother wanted me to delete the picture.", "exk": "남동생은 내가 사진을 삭제하기를 원했다."}], "build": [{"k": "나는 남동생이 농구를 하고 있는 것을 보았다.", "t": ["I", "saw", "my brother", "playing", "basketball."]}, {"k": "남동생은 내가 그 사진을 삭제하기를 원했다.", "t": ["My brother", "wanted", "me", "to delete", "the picture."]}], "choose": [{"k": "나는 그가 학교로 뛰어가고 있는 것을 보았다.", "pre": "I saw him", "post": "to school.", "a": "running", "o": ["running", "to run", "runs"]}, {"k": "엄마는 내가 방을 청소하기를 원하신다.", "pre": "Mom wants me", "post": "my room.", "a": "to clean", "o": ["clean", "to clean", "cleaning"]}], "bridge": "see 다음 사람 뒤에는 -ing, want 다음 사람 뒤에는 to + 동사원형! 이 두 가지를 홈그룹 친구들에게 꼭 알려 주세요."}, "qs": [{"q": "What was Bella's brother doing after school?", "k": "Bella의 남동생은 방과 후에 무엇을 하고 있었나요?", "line": "He was ___ basketball.", "blanks": [{"a": "playing", "o": ["playing", "watching", "teaching", "buying"]}]}, {"q": "What did Bella's brother want her to do?", "k": "Bella의 남동생은 Bella가 무엇을 하기를 원했나요?", "line": "He wanted her ___ the picture of him.", "blanks": [{"a": "to delete", "o": ["delete", "to delete", "deleting", "to share"]}]}], "script": "Bella는 농구하는 남동생 사진을 SNS에 올렸어. 그런데 누군가 나쁜 댓글을 단 복사본을 여기저기 퍼뜨렸어. 동생이 사진을 지워 달라고 해서 Bella는 바로 지웠지만 복사본이 남아 있었어. Happy Digital Laundry는 '공유는 쉽지만 지우는 건 어렵다'고 말해.", "key": "saw ~ playing / wanted me to delete", "keyk": "~가 …하고 있는 것을 보았다 / 내가 …하기를 원했다", "keyx": "I saw my brother playing basketball."}, "C": {"title": "지훈이의 사연: 공짜 스마트폰 광고", "page": "107쪽", "who": "Jihun", "sents": [["no_more", "Hi, I'm Jihun. Last month, I saw an interesting advertisement online.", "안녕하세요, 저는 지훈이에요. 지난달, 저는 온라인에서 흥미로운 광고를 보았어요."], ["no_more", "It said that I could get a new smartphone for free.", "그 광고에는 제가 새 스마트폰을 공짜로 받을 수 있다고 쓰여 있었어요."], ["no_more", "I clicked on it without thinking much.", "저는 별 생각 없이 그것을 클릭했어요."], ["no_more", "Then, I filled out my information to receive the gift.", "그리고 저는 선물을 받으려고 제 정보를 적었어요."], ["no_more", "However, instead of getting a new smartphone, I have received useless emails and phone calls from unknown numbers.", "하지만 새 스마트폰을 받는 대신, 저는 쓸모없는 이메일과 모르는 번호의 전화를 받아 왔어요."], ["no_more", "Oh, my! I just <u>heard my phone ringing</u> again.", "아, 이런! 방금 또 제 전화가 울리는 소리를 들었어요."], ["no_more", "It makes me very upset.", "그것 때문에 저는 정말 속상해요."], ["no_more", "I'm sure that someone is using my information in a bad way.", "저는 누군가 제 정보를 나쁜 방법으로 쓰고 있다고 확신해요."], ["no_more", "I think that my personal information was shared.", "저는 제 개인 정보가 공유되었다고 생각해요."], ["no_more", "I want to delete it. Can you help me, please?", "저는 그것을 삭제하고 싶어요. 저를 도와주실 수 있나요?"], ["Happy_Digital_Laundry", "We checked your online records and found the ad.", "우리는 당신의 온라인 기록을 확인해서 그 광고를 찾았어요."], ["Happy_Digital_Laundry", "Then, we <u>asked the ad company to delete</u> your information, and they did.", "그리고 우리는 광고 회사에 당신의 정보를 삭제해 달라고 요청했고, 그들은 그렇게 했어요."], ["Happy_Digital_Laundry", "To protect your personal information, don't click on ads or links from unknown sources.", "당신의 개인 정보를 보호하려면, 모르는 출처의 광고나 링크를 클릭하지 마세요."], ["Happy_Digital_Laundry", "It can be very dangerous.", "그것은 매우 위험할 수 있어요."]], "words": [["advertisement (ad)", "광고"], ["for free", "공짜로"], ["click", "클릭하다"], ["fill out", "(서류를) 작성하다"], ["receive", "받다"], ["instead of", "~ 대신에"], ["useless", "쓸모없는"], ["unknown", "알려지지 않은, 모르는"], ["upset", "속상한"], ["personal information", "개인 정보"], ["record", "기록"], ["protect", "보호하다"], ["link", "링크"], ["source", "출처"], ["dangerous", "위험한"]], "grammar": {"patterns": [{"form": "hear + 사람/사물 + 동사ing", "mean": "~가 …하는 소리를 듣다", "ex": "I heard my phone ringing.", "exk": "나는 내 전화가 울리는 소리를 들었다."}, {"form": "ask + 사람 + to + 동사원형", "mean": "~에게 …해 달라고 요청하다", "ex": "We asked the ad company to delete your information.", "exk": "우리는 광고 회사에 당신의 정보를 삭제해 달라고 요청했다."}], "build": [{"k": "나는 내 전화가 울리는 소리를 들었다.", "t": ["I", "heard", "my phone", "ringing."]}, {"k": "우리는 광고 회사에 당신의 정보를 삭제해 달라고 요청했다.", "t": ["We", "asked", "the ad company", "to delete", "your information."]}], "choose": [{"k": "Brown 씨는 그들이 노래를 부르고 있는 것을 들었다.", "pre": "Mr. Brown heard them", "post": "a song.", "a": "singing", "o": ["singing", "to sing", "sings"]}, {"k": "Lisa는 Michael에게 창문을 열어 두라고 요청했다.", "pre": "Lisa asked Michael", "post": "the windows open.", "a": "to keep", "o": ["keep", "to keep", "keeping"]}], "bridge": "hear 다음 사람이나 사물 뒤에는 -ing, ask 다음 사람 뒤에는 to + 동사원형! B 파트의 see, want와 짝을 지어 기억해요."}, "qs": [{"q": "What did Jihun want to get for free?", "k": "지훈이는 무엇을 공짜로 받고 싶었나요?", "line": "He wanted to get a new ___ .", "blanks": [{"a": "smartphone", "o": ["smartphone", "computer", "email", "gift card"]}]}, {"q": "What did Happy Digital Laundry ask the ad company to do?", "k": "Happy Digital Laundry는 광고 회사에 무엇을 해 달라고 요청했나요?", "line": "They asked the ad company ___ Jihun's information.", "blanks": [{"a": "to delete", "o": ["delete", "to delete", "deleting", "to share"]}]}], "script": "지훈이는 공짜 스마트폰 광고를 보고 별 생각 없이 클릭해서 자기 정보를 적었어. 그런데 스마트폰 대신 쓸모없는 이메일과 모르는 번호의 전화만 왔어. Happy Digital Laundry는 광고 회사에 지훈이의 정보를 지워 달라고 요청했고, 모르는 출처의 광고나 링크는 클릭하지 말라고 했어.", "key": "heard ~ ringing / asked ~ to delete", "keyk": "~가 …하는 소리를 들었다 / ~에게 …해 달라고 요청했다", "keyx": "I heard my phone ringing again."}}, "report": [{"p": "A", "title": "Happy Digital Laundry 소개", "items": [{"id": "ra1", "pre": "Happy Digital Laundry는 옷이 아니라 인터넷에 남은 내 흔적인 (  )을 지워 준다.", "a": "디지털 발자국", "o": ["디지털 발자국", "빨래", "스마트폰", "광고"]}, {"id": "ra2", "pre": "도움을 받으려면 웹사이트에 (  )를 남긴다.", "a": "메시지", "o": ["메시지", "사진", "댓글", "전화번호"]}], "emo": "worried", "emoq": "광고 속 손님의 마음 (Are you ___ ?)"}, {"p": "B", "title": "Case Report 1 · Bella", "items": [{"id": "rb1", "pre": "We helped Bella remove unnecessary (  ) of a file shared online.", "a": "copies", "o": ["copies", "devices", "information", "sources"], "en": true}, {"id": "rb2", "pre": "Some copies might still exist on personal (  ).", "a": "devices", "o": ["devices", "copies", "links", "advertisement"], "en": true}, {"id": "rb3", "pre": "(  ) something online is easy, but removing it is hard.", "a": "Sharing", "o": ["Sharing", "Removing", "Protecting", "Deleting"], "en": true}, {"id": "rb4", "pre": "People should be (  ) when sharing things online.", "a": "careful", "o": ["careful", "unknown", "useless", "embarrassed"], "en": true}], "emo": "embarrassed", "emoq": "복사본이 퍼졌을 때 Bella의 마음"}, {"p": "C", "title": "Case Report 2 · Jihun", "items": [{"id": "rc1", "pre": "Jihun was worried about his personal (  ) being used in a bad way.", "a": "information", "o": ["information", "copies", "devices", "comments"], "en": true}, {"id": "rc2", "pre": "He saw an (  ) online and filled out his information.", "a": "advertisement", "o": ["advertisement", "email", "copy", "laundry"], "en": true}, {"id": "rc3", "pre": "We asked the advertising company to (  ) his information.", "a": "delete", "o": ["delete", "share", "receive", "click"], "en": true}, {"id": "rc4", "pre": "People should avoid clicking on ads or links from (  ) sources.", "a": "unknown", "o": ["unknown", "careful", "personal", "digital"], "en": true}], "emo": "upset", "emoq": "전화가 또 울렸을 때 지훈이의 마음"}], "emotions": [["worried", "걱정하는"], ["embarrassed", "당황한"], ["upset", "속상한"], ["excited", "신이 난"]], "gramq": [{"k": "지혜는 개가 나무 아래에서 자고 있는 것을 보았다.", "pre": "Jihye saw the dog", "post": "under the tree.", "a": "sleeping", "o": ["sleeping", "to sleep"], "type": "see"}, {"k": "아빠는 아기가 울고 있는 소리를 들었다.", "pre": "Dad heard the baby", "post": "in the room.", "a": "crying", "o": ["crying", "to cry"], "type": "see"}, {"k": "그녀는 비가 손에 떨어지는 것을 느꼈다.", "pre": "She felt the rain", "post": "on her hands.", "a": "falling", "o": ["falling", "to fall"], "type": "see"}, {"k": "John은 Mary가 그에게 전화해 주기를 원한다.", "pre": "John wants Mary", "post": "him.", "a": "to call", "o": ["calling", "to call"], "type": "want"}, {"k": "Emily는 Tom에게 창문을 닫으라고 말했다.", "pre": "Emily told Tom", "post": "the window.", "a": "to close", "o": ["closing", "to close"], "type": "want"}, {"k": "Sophia는 나에게 설거지를 해 달라고 요청했다.", "pre": "Sophia asked me", "post": "the dishes.", "a": "to do", "o": ["doing", "to do"], "type": "want"}], "vocabq": [["to say sorry", "사과하다", "apologize"], ["a mark left by a foot or a shoe", "발자국", "footprint"], ["very quickly or without waiting", "즉시", "immediately"], ["not helpful or effective", "쓸모없는", "useless"], ["likely to cause harm or injury", "위험한", "dangerous"], ["to press a button on a computer mouse", "클릭하다", "click"], ["a place where something comes from", "출처", "source"], ["something that is made to be the same as another", "복사본", "copy"], ["to remove writing or pictures completely", "지우다", "erase"], ["to keep someone or something safe", "보호하다", "protect"]], "rules": [{"id": "r1", "pre": "Don't click on ads or links from", "post": "sources.", "a": "unknown", "o": ["unknown", "careful", "personal"]}, {"id": "r2", "pre": "Be careful when you", "post": "pictures of your friends.", "a": "share", "o": ["share", "erase", "receive"]}, {"id": "r3", "pre": "We want everyone", "post": "their personal information.", "a": "to protect", "o": ["protect", "to protect", "protecting"]}]};
+const PARTS = DATA.parts, ORDER = ['A','B','C'];
+const PCOLOR = {A:'--partA', B:'--partB', C:'--partC'};
+const EXPERT_STEPS = [['Words','단어'],['Read','본문'],['Grammar','문법'],['Mission','미션'],['Teach','설명']];
+const HOME_STEPS = [['Listen','설명 듣기'],['Report','사건 보고서'],['Grammar','문법 정리'],['Words','어휘 퀴즈'],['Rules','안전 규칙']];
+
+let S = {done:{}, stars:0, home:false};
+try{ const s = JSON.parse(localStorage.getItem('l6-jigsaw')||'null'); if(s) S = Object.assign(S, s); }catch(e){}
+function saveS(){ try{ localStorage.setItem('l6-jigsaw', JSON.stringify(S)); }catch(e){} }
+let H = {heard:{}, rep:{}, emo:{}, gram:{}, vocab:{i:0, score:0, done:false, order:null}, rules:{}, own:''};
+try{ const h = JSON.parse(localStorage.getItem('l6-home')||'null'); if(h) H = Object.assign(H, h); }catch(e){}
+function saveH(){ try{ localStorage.setItem('l6-home', JSON.stringify(H)); }catch(e){} }
+const PROG = {};
+function prog(p){ return PROG[p] || (PROG[p] = {showKo:false, words:new Set(), wq:{i:0, list:null, done:false}, build:{}, choose:{}, q:{}}); }
+let view = {name:'start'};
+const app = document.getElementById('app');
+
+const canSpeak = 'speechSynthesis' in window;
+function sayIt(html, rate){
+  if(!canSpeak) return;
+  const t = String(html).replace(/<[^>]+>/g,'');
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; u.rate = rate || 0.8;
+  const v = speechSynthesis.getVoices().find(v => /en[-_]US/i.test(v.lang)); if(v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function mix(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function paint(tokenVar, softPct){
+  app.style.setProperty('--pc', `var(${tokenVar})`);
+  app.style.setProperty('--soft', `color-mix(in srgb, var(${tokenVar}) ${softPct||13}%, var(--surface))`);
+}
+function shake(b){ b.classList.remove('wrong'); void b.offsetWidth; b.classList.add('wrong'); }
+function headBar(sub){
+  return `<div class="bar"><div class="brand"><b>Happy Digital Laundry</b><span>${sub}</span></div>
+    ${view.name!=='start' ? '<button class="homebtn" data-gostart>처음 화면</button>' : ''}</div>`;
+}
+function footSVG(p){
+  const d = S.done[p];
+  const col = d ? `var(${PCOLOR[p]})` : 'var(--dirt)';
+  return `<svg viewBox="0 0 62 84" aria-hidden="true">
+    <ellipse cx="31" cy="54" rx="17" ry="26" fill="${col}"/>
+    <circle cx="14" cy="20" r="6" fill="${col}"/><circle cx="25" cy="13" r="6.5" fill="${col}"/>
+    <circle cx="37" cy="12" r="6.5" fill="${col}"/><circle cx="48" cy="18" r="5.5" fill="${col}"/>
+    ${d ? '<path d="M22 54 l7 7 l12 -14" fill="none" stroke="var(--on)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>' : ''}
+  </svg>`;
+}
+function go(v){ view = v; draw(); window.scrollTo(0,0); }
+function draw(){
+  if(canSpeak) speechSynthesis.cancel();
+  if(view.name === 'start') drawStart();
+  else if(view.name === 'expert') drawExpert();
+  else drawHome();
+  app.querySelectorAll('[data-gostart]').forEach(b => b.onclick = () => go({name:'start'}));
+}
+
+/* ---------- start ---------- */
+function drawStart(){
+  paint('--main');
+  const n = ORDER.filter(p => S.done[p]).length;
+  app.innerHTML = `${headBar('Lesson 6 · Use Smart, Live Safe · 직소 리딩')}
+  <div class="panel">
+    <div class="feet">${ORDER.map(p => `<div class="foot">${footSVG(p)}<span style="color:var(${PCOLOR[p]})">Expert ${p}</span></div>`).join('')}</div>
+    <p class="note" style="text-align:center">파트를 끝낼 때마다 디지털 발자국이 깨끗해져요. 지금까지 <b>${n}</b>/3 완료</p>
+  </div>
+  <div class="panel">
+    <h2>1단계 · 전문가 그룹 <small class="en">Expert Group</small></h2>
+    <p class="note">내가 맡은 파트(A, B, C)를 눌러 공부하세요. 단어 → 본문 → 문법 → 미션 → 설명 준비 순서로 해요.</p>
+    <div class="parts">${ORDER.map(p => `<button class="pcard ${S.done[p]?'done':''}" style="--c:var(${PCOLOR[p]})" data-part="${p}">
+      <span class="tag">Expert ${p} · ${PARTS[p].page}</span><span class="t">${PARTS[p].title}</span>
+      <span class="s">${S.done[p] ? '✓ 설명 준비 완료' : '핵심 문법: <span class="en">' + PARTS[p].grammar.patterns.map(x=>x.form).join(' / ') + '</span>'}</span></button>`).join('')}</div>
+  </div>
+  <div class="panel">
+    <h2>2단계 · 홈그룹 <small class="en">Home Group</small></h2>
+    <p class="note">홈그룹으로 돌아와 A → B → C 순서로 설명하고, 사건 보고서와 문법, 어휘를 함께 정리해요.</p>
+    <button class="big warm" data-gohome>홈그룹 활동 시작</button>
+  </div>
+  <p class="note" style="text-align:center">기록은 이 기기에만 저장돼요. <button class="mini" id="resetAll">처음부터 다시</button></p>`;
+  app.querySelectorAll('[data-part]').forEach(b => b.onclick = () => go({name:'expert', part:b.dataset.part, step:0}));
+  app.querySelector('[data-gohome]').onclick = () => go({name:'home', step:0});
+  const r = document.getElementById('resetAll'); let armed = false;
+  r.onclick = () => {
+    if(!armed){ armed = true; r.textContent = '한 번 더 누르면 모두 지워져요'; return; }
+    S = {done:{}, stars:0, home:false};
+    H = {heard:{}, rep:{}, emo:{}, gram:{}, vocab:{i:0, score:0, done:false, order:null}, rules:{}, own:''};
+    for(const k in PROG) delete PROG[k];
+    saveS(); saveH(); draw();
+  };
+}
+
+function stepsBar(steps, cur, doneFn){
+  return `<div class="steps">${steps.map((s,i) => `<button class="step ${doneFn(i)?'done':''}" aria-current="${i===cur}" data-step="${i}"><b>${s[0]}</b>${s[1]}</button>`).join('')}</div>`;
+}
+function navBar(last){
+  return `<div class="nav">${view.step>0 ? '<button id="prevBtn">← 이전</button>' : ''}${view.step<last ? '<button class="go" id="nextBtn">다음 단계 →</button>' : '<button class="go" data-gostart>처음 화면으로</button>'}</div>`;
+}
+function bindNav(){
+  app.querySelectorAll('[data-step]').forEach(b => b.onclick = () => { view.step = +b.dataset.step; draw(); window.scrollTo(0,0); });
+  const n = document.getElementById('nextBtn'); if(n) n.onclick = () => { view.step++; draw(); window.scrollTo(0,0); };
+  const p = document.getElementById('prevBtn'); if(p) p.onclick = () => { view.step--; draw(); window.scrollTo(0,0); };
+}
+
+/* reusable: sentence builder (tap words in order) */
+function buildHTML(id, item, doneMap){
+  const got = doneMap[id] || [];
+  const finished = got.length === item.t.length;
+  const left = item.t.map((w,i)=>({w,i})).filter(x => !got.includes(x.i));
+  const pool = mix(left);
+  return `<div class="q"><span>${esc(item.k)}</span>
+    <div class="built">${got.map(i => `<span>${esc(item.t[i])}</span>`).join('') || '<span class="note" style="border:none;background:none">단어 조각을 순서대로 눌러요</span>'}</div>
+    ${finished ? `<p class="fb ok">완성! ${canSpeak?`<button class="mini" data-saybuild="${esc(item.t.join(' '))}">▶ 듣기</button>`:''}</p>`
+      : `<div class="opts">${pool.map(x => `<button class="opt en" data-bid="${id}" data-bi="${x.i}">${esc(x.w)}</button>`).join('')}</div><p class="fb" id="fb-${id}"></p>`}
+  </div>`;
+}
+function bindBuild(items, doneMap, save){
+  app.querySelectorAll('[data-bid]').forEach(b => b.onclick = () => {
+    const id = b.dataset.bid, i = +b.dataset.bi, got = doneMap[id] || (doneMap[id] = []);
+    if(i === got.length){ got.push(i); if(got.length === items[id].t.length){ S.stars++; saveS(); } save && save(); draw(); }
+    else { shake(b); const f = document.getElementById('fb-'+id); f.className='fb no'; f.textContent = '순서를 다시 생각해 봐요. 누가(주어) → 했다(동사) → 누구를 → 무엇을 순서예요.'; }
+  });
+  app.querySelectorAll('[data-saybuild]').forEach(b => b.onclick = () => sayIt(b.dataset.saybuild));
+}
+/* reusable: choose-one blank */
+function chooseHTML(id, item, doneMap, hint){
+  const v = doneMap[id];
+  return `<div class="q"><span>${esc(item.k)}</span>
+    <div class="line">${esc(item.pre)} <span class="blank ${v?'ok':''}">${v?esc(item.a):'?'}</span> ${esc(item.post)}</div>
+    ${v ? '<p class="fb ok">정답!</p>' : `<div class="opts">${mix(item.o).map(o => `<button class="opt en" data-cid="${id}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div><p class="fb" id="fb-${id}">${hint||''}</p>`}
+  </div>`;
+}
+function bindChoose(lookup, doneMap, save, wrongMsg){
+  app.querySelectorAll('[data-cid]').forEach(b => b.onclick = () => {
+    const id = b.dataset.cid, item = lookup[id];
+    if(b.dataset.v === item.a){ b.classList.add('right'); doneMap[id] = true; S.stars++; saveS(); save && save(); setTimeout(draw, 320); }
+    else { shake(b); const f = document.getElementById('fb-'+id); f.className='fb no'; f.textContent = typeof wrongMsg === 'function' ? wrongMsg(item) : wrongMsg; }
+  });
+}
+function gramHint(item){
+  const a = item.a;
+  if(/^to /.test(a)) return 'want, tell, ask 다음 사람 뒤에는 to + 동사원형이 와요.';
+  if(/ing$/.test(a)) return 'see, hear, feel 다음 사람(사물) 뒤에는 동사ing가 와요.';
+  return '우리말 뜻을 다시 읽어 봐요.';
+}
+
+/* ---------- expert ---------- */
+function drawExpert(){
+  const p = view.part, D = PARTS[p], st = prog(p);
+  paint(PCOLOR[p]);
+  let body = '';
+  if(view.step === 0){
+    const allFlipped = st.words.size === D.words.length;
+    body = `<div class="panel"><h2>① 단어 카드를 눌러 뜻을 확인해요</h2>
+      <p class="note">카드를 누르면 뜻이 보이고 소리가 나와요. (${st.words.size}/${D.words.length})</p>
+      <div class="words">${D.words.map((w,i) => `<button class="word ${st.words.has(i)?'flipped':''}" data-w="${i}"><span class="we">${esc(w[0])}</span>${st.words.has(i)?`<span class="wk">${esc(w[1])}</span>`:''}</button>`).join('')}</div></div>
+      <div class="panel"><h2>② 단어 퀴즈 <small>뜻을 보고 영어 단어를 골라요</small></h2>${allFlipped ? wordQuizHTML(p) : '<p class="note">카드를 모두 뒤집으면 퀴즈가 열려요.</p>'}</div>`;
+  } else if(view.step === 1){
+    body = `<div class="panel"><h2>문장을 하나씩 읽어 보세요</h2>
+      <p class="note">모르는 문장은 <b>뜻</b>을 누르고, <b>듣기</b>로 소리도 들어요. 밑줄 친 부분이 우리 파트의 핵심 문법이에요.</p>
+      <div class="tools"><button class="chipbtn" id="allKo" aria-pressed="${st.showKo}">${st.showKo?'뜻 모두 숨기기':'뜻 모두 보기'}</button>
+      ${canSpeak?'<button class="chipbtn" id="readAll">▶ 전체 듣기</button>':''}</div>
+      <div>${D.sents.map((s,i) => {
+        const prev = i>0 ? D.sents[i-1][0] : null;
+        const label = s[0] !== prev ? `<span></span><span class="who ${s[0]==='Happy_Digital_Laundry'?'hdl':''}">${esc(s[0])}</span>` : '';
+        return `${label ? `<div class="sent" style="border:none;padding:0">${label}</div>` : ''}<div class="sent"><span class="n">${i+1}</span><span class="e">${s[1]}${wordTags(p, s[1])}</span>
+          <div class="k" ${st.showKo?'':'hidden'} data-k="${i}">${esc(s[2])}</div>
+          <div class="acts"><button class="mini" data-ko="${i}">뜻</button>${canSpeak?`<button class="mini" data-say="${i}">▶ 듣기</button>`:''}</div></div>`;}).join('')}</div></div>`;
+  } else if(view.step === 2){
+    const G = D.grammar;
+    body = `<div class="panel"><h2>① 문법 공식 알아보기</h2>
+      ${G.patterns.map(x => `<div class="pattern"><span class="form">${esc(x.form)}</span><span>${esc(x.mean)}</span><span class="ex">${esc(x.ex)}</span><span class="exk">${esc(x.exk)}</span>
+        ${canSpeak?`<div><button class="mini" data-sayx="${esc(x.ex)}">▶ 듣기</button></div>`:''}</div>`).join('')}
+      </div>
+      <div class="panel"><h2>② 본문 문장 만들기 <small>단어 조각을 순서대로 눌러요</small></h2>
+      ${G.build.map((b,i) => buildHTML(p+'b'+i, b, st.build)).join('')}</div>
+      <div class="panel"><h2>③ 알맞은 것 고르기</h2>
+      ${G.choose.map((c,i) => chooseHTML(p+'c'+i, c, st.choose)).join('')}
+      <div class="bridge">${esc(G.bridge)}</div></div>`;
+  } else if(view.step === 3){
+    body = `<div class="panel"><h2>Mission Check <small>우리 전문가끼리 풀기</small></h2>
+      <p class="note">빈칸에 들어갈 말을 골라요. 틀려도 괜찮아요, 다시 고르면 돼요.</p>
+      ${D.qs.map((q,qi) => missionHTML(p,q,qi)).join('')}</div>`;
+  } else {
+    body = `<div class="panel"><h2>홈그룹 친구들에게 이렇게 설명하세요!</h2>
+      <div class="keycard"><span class="note">우리 파트 핵심 표현</span><span class="ke">${esc(D.key)}</span><span>${esc(D.keyk)}</span><span class="kx">${esc(D.keyx)}</span>
+      ${canSpeak?'<div><button class="mini" id="sayKey">▶ 예문 듣기</button></div>':''}</div>
+      <div><p class="note" style="margin-bottom:6px">요약 (소리 내어 읽어 보세요)</p><div class="script">"${esc(D.script)}"</div></div>
+      <div><p class="note" style="margin-bottom:6px">꼭 알려 줄 단어 5개</p>
+        <div class="tools">${D.words.slice(0,5).map(w=>`<span class="chipbtn"><span class="en">${esc(w[0])}</span> ${esc(w[1])}</span>`).join('')}</div></div>
+      <div>
+        <label class="check"><input type="checkbox" id="c1" ${st.c1?'checked':''}> 요약을 소리 내어 두 번 읽었어요.</label>
+        <label class="check"><input type="checkbox" id="c2" ${st.c2?'checked':''}> 핵심 문법 공식을 친구에게 말할 수 있어요.</label>
+        <label class="check"><input type="checkbox" id="c3" ${st.c3?'checked':''}> 미션 문제의 답을 친구에게 알려 줄 수 있어요.</label>
+      </div>
+      <button class="big" id="finish" style="background:var(--pc)" ${(st.c1&&st.c2&&st.c3)?'':'disabled'}>${S.done[p]?'✓ 전문가 '+p+' 완료!':'전문가 '+p+' 준비 완료'}</button>
+    </div>`;
+  }
+  app.innerHTML = `${headBar('전문가 그룹 · Expert ' + p)}
+    <div class="parthead"><span class="badge">Expert ${p}</span><h1>${esc(D.title)}</h1></div>
+    ${stepsBar(EXPERT_STEPS, view.step, i => expertDone(p,i))}
+    ${body}
+    ${navBar(4)}`;
+  bindNav();
+  if(view.step === 0){
+    app.querySelectorAll('[data-w]').forEach(b => b.onclick = () => { const i = +b.dataset.w; st.words.add(i); sayIt(D.words[i][0], 0.75); draw(); });
+    bindWordQuiz(p);
+  }
+  if(view.step === 1){
+    st.read = true;
+    document.getElementById('allKo').onclick = () => { st.showKo = !st.showKo; draw(); };
+    app.querySelectorAll('[data-ko]').forEach(b => b.onclick = () => { const k = app.querySelector(`[data-k="${b.dataset.ko}"]`); k.hidden = !k.hidden; });
+    app.querySelectorAll('[data-say]').forEach(b => b.onclick = () => sayIt(D.sents[+b.dataset.say][1]));
+    const ra = document.getElementById('readAll'); if(ra) ra.onclick = () => sayIt(D.sents.map(s => s[1]).join(' '), 0.78);
+  }
+  if(view.step === 2){
+    app.querySelectorAll('[data-sayx]').forEach(b => b.onclick = () => sayIt(b.dataset.sayx));
+    const bl = {}; D.grammar.build.forEach((b,i) => bl[p+'b'+i] = b);
+    bindBuild(bl, st.build);
+    const cl = {}; D.grammar.choose.forEach((c,i) => cl[p+'c'+i] = c);
+    bindChoose(cl, st.choose, null, gramHint);
+  }
+  if(view.step === 3) bindMission(p);
+  if(view.step === 4){
+    const sk = document.getElementById('sayKey'); if(sk) sk.onclick = () => sayIt(D.keyx);
+    ['c1','c2','c3'].forEach(id => document.getElementById(id).onchange = e => { st[id] = e.target.checked; document.getElementById('finish').disabled = !(st.c1&&st.c2&&st.c3); });
+    document.getElementById('finish').onclick = () => { S.done[p] = true; saveS(); go({name:'start'}); };
+  }
+}
+function wordTags(p, html){
+  // show a small Korean hint after key vocabulary that appears in the sentence (first 2 matches)
+  const plain = html.replace(/<[^>]+>/g,'').toLowerCase();
+  const hits = PARTS[p].words.filter(w => { const base = w[0].replace(/ \(.*\)$/,'').toLowerCase(); return plain.includes(base); }).slice(0,2);
+  return hits.map(w => `<span class="wtag">${esc(w[0].replace(/ \(.*\)$/,''))} ${esc(w[1])}</span>`).join('');
+}
+function expertDone(p,i){
+  const st = prog(p), D = PARTS[p];
+  if(i===0) return st.words.size === D.words.length && st.wq.done;
+  if(i===1) return !!st.read;
+  if(i===2) return D.grammar.build.every((b,k) => (st.build[p+'b'+k]||[]).length === b.t.length) && D.grammar.choose.every((c,k) => st.choose[p+'c'+k]);
+  if(i===3) return D.qs.every((q,qi) => q.blanks.every((b,bi) => st.q[qi+'-'+bi]));
+  return !!S.done[p];
+}
+function wordQuizHTML(p){
+  const st = prog(p), W = PARTS[p].words;
+  if(!st.wq.list) st.wq.list = mix(W.map((w,i)=>i)).slice(0,5);
+  if(st.wq.done) return `<p class="fb ok">퀴즈 완료! 5문제 중 ${st.wq.score||0}개를 한 번에 맞혔어요.</p><button class="mini" id="wqAgain">다시 풀기</button>`;
+  const idx = st.wq.list[st.wq.i], w = W[idx];
+  const others = mix(W.map((x,i)=>i).filter(i => i!==idx)).slice(0,2);
+  const opts = mix([idx, ...others]);
+  return `<div class="meter"><i style="width:${st.wq.i/5*100}%"></i></div>
+    <div class="vq"><span class="note">${st.wq.i+1} / 5</span><span style="font-size:1.25rem">${esc(w[1])}</span>
+    <div class="opts">${opts.map(i => `<button class="opt en" data-wq="${i}">${esc(W[i][0])}</button>`).join('')}</div><p class="fb" id="fbwq"></p></div>`;
+}
+function bindWordQuiz(p){
+  const st = prog(p);
+  const again = document.getElementById('wqAgain'); if(again) again.onclick = () => { st.wq = {i:0, list:null, done:false}; draw(); };
+  let missed = false;
+  app.querySelectorAll('[data-wq]').forEach(b => b.onclick = () => {
+    const idx = st.wq.list[st.wq.i];
+    if(+b.dataset.wq === idx){
+      b.classList.add('right'); if(!missed) st.wq.score = (st.wq.score||0) + 1;
+      sayIt(PARTS[p].words[idx][0], 0.75);
+      setTimeout(() => { st.wq.i++; if(st.wq.i >= 5) st.wq.done = true; draw(); }, 420);
+    } else { missed = true; shake(b); const f = document.getElementById('fbwq'); f.className='fb no'; f.textContent='다시! 위의 단어 카드를 다시 봐도 돼요.'; }
+  });
+}
+function missionHTML(p,q,qi){
+  const st = prog(p); let bi = 0;
+  const line = esc(q.line).replace(/___/g, () => { const v = st.q[qi+'-'+bi]; const b = q.blanks[bi]; bi++; return `<span class="blank ${v?'ok':''}">${v?esc(b.a):'?'}</span>`; });
+  const cur = q.blanks.findIndex((b,i) => !st.q[qi+'-'+i]);
+  return `<div class="q"><span class="qt">Q${qi+1}. ${esc(q.q)}</span><span class="qk">${esc(q.k)}</span>
+    <div class="line">${line}</div>
+    ${cur === -1 ? '<p class="fb ok">정답이에요! 잘했어요.</p>' : `<div class="opts">${q.blanks[cur].o.map(o => `<button class="opt en" data-q="${qi}" data-b="${cur}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div><p class="fb" id="fbq${qi}"></p>`}
+  </div>`;
+}
+function bindMission(p){
+  const D = PARTS[p], st = prog(p);
+  app.querySelectorAll('.opt[data-q]').forEach(b => b.onclick = () => {
+    const qi = +b.dataset.q, bi = +b.dataset.b, ans = D.qs[qi].blanks[bi].a;
+    if(b.dataset.v === ans){ b.classList.add('right'); st.q[qi+'-'+bi] = true; S.stars++; saveS(); setTimeout(draw, 320); }
+    else { shake(b); const f = document.getElementById('fbq'+qi); f.className='fb no';
+      f.textContent = /^to /.test(ans) ? '힌트: want, ask 다음에는 to + 동사원형이 와요.' : '본문을 한 번 더 읽어 볼까요?'; }
+  });
+}
+
+/* ---------- home group ---------- */
+function drawHome(){
+  paint('--warm');
+  let body = '';
+  if(view.step === 0){
+    body = `<div class="panel"><h2>A → B → C 순서로 설명해요</h2>
+      <p class="note">자기 차례가 되면 카드를 펼쳐 핵심 문법을 보여 주며 설명하세요. 다 들었으면 <b>들었어요</b>를 눌러요.</p>
+      ${ORDER.map(p => `<div class="rbox" style="--c:var(${PCOLOR[p]})"><h3><span>Expert ${p}</span>${esc(PARTS[p].title)}</h3>
+        <div class="tools"><button class="chipbtn" data-show="${p}">설명할 사람: 핵심 문법 보기</button>
+        <button class="chipbtn" data-heard="${p}" aria-pressed="${!!H.heard[p]}">${H.heard[p]?'✓ 들었어요':'들었어요'}</button></div>
+        <div hidden id="show${p}" style="display:flex;flex-direction:column;gap:8px">${PARTS[p].grammar.patterns.map(x => `<div class="pattern" style="--pc:var(${PCOLOR[p]})"><span class="form">${esc(x.form)}</span><span>${esc(x.mean)}</span><span class="ex">${esc(x.ex)}</span></div>`).join('')}</div>
+      </div>`).join('')}</div>`;
+  } else if(view.step === 1){
+    body = `<div class="panel"><h2>Happy Digital Laundry 사건 보고서 <small class="en">Case Report</small></h2>
+      <p class="note">친구들의 설명을 떠올리며 빈칸과 마음(감정)을 골라요.</p>
+      ${DATA.report.map((r,ri) => reportHTML(r)).join('<div style="text-align:center;color:var(--muted)">↓</div>')}</div>`;
+  } else if(view.step === 2){
+    const rows = [
+      ['see / hear / feel + 사람(사물) + 동사ing', '~가 …하고 있는 것을 보다 / 듣다 / 느끼다', 'I saw my brother playing basketball.<br>I heard my phone ringing.', 'B, C'],
+      ['want / tell / ask + 사람 + to + 동사원형', '~가 …하기를 원하다 / ~에게 …하라고 말하다 / 요청하다', 'My brother wanted me to delete the picture.<br>We asked the ad company to delete your information.', 'B, C'],
+      ['want to + 동사원형', '~하고 싶다', 'Do you want to erase it?', 'A']
+    ];
+    const gl = {}; DATA.gramq.forEach((g,i) => gl['g'+i] = g);
+    body = `<div class="panel"><h2>핵심 문법 정리 <small>Key Grammar Summary</small></h2>
+      <div class="tw"><table class="gt"><tr><th>공식</th><th>뜻</th><th>본문 문장</th><th>파트</th></tr>
+      ${rows.map(r => `<tr><td class="en"><b>${r[0]}</b></td><td>${r[1]}</td><td class="en">${r[2]}</td><td>${r[3]}</td></tr>`).join('')}</table></div>
+      <div class="bridge">기억법: <b>보고, 듣고, 느끼면 → -ing</b> / <b>원하고, 말하고, 부탁하면 → to + 동사원형</b></div></div>
+      <div class="panel"><h2>모둠 문법 퀴즈 <small>알맞은 것을 골라요</small></h2>
+      ${DATA.gramq.map((g,i) => chooseHTML('g'+i, g, H.gram)).join('')}</div>`;
+    setTimeout(() => bindChoose(gl, H.gram, saveH, gramHint), 0);
+  } else if(view.step === 3){
+    body = `<div class="panel"><h2>Lesson 6 어휘 퀴즈 <small>영어 풀이와 우리말 뜻을 보고 단어를 골라요</small></h2>${vocabHTML()}</div>`;
+  } else {
+    const all = DATA.rules.every(r => H.rules[r.id]);
+    const rl = {}; DATA.rules.forEach(r => rl[r.id] = Object.assign({k:''}, r));
+    body = `<div class="panel"><h2>Final Group Mission: Our Digital Safety Rules</h2>
+      <p class="note">Bella와 지훈이처럼 곤란해지지 않도록, 우리 모둠의 디지털 안전 규칙을 완성해요.</p>
+      ${DATA.rules.map(r => chooseHTML(r.id, Object.assign({k:'규칙'}, r), H.rules)).join('').replace(/<span>규칙<\/span>/g,'')}
+      <div class="q"><span>규칙 4. 우리 모둠이 직접 만들어요 (선택)</span>
+        <div class="line">We want everyone <input class="typed" id="own" style="display:inline-block;width:auto;min-width:200px" placeholder="to think before sharing" value="${esc(H.own)}"> .</div></div>
+      ${all ? `<div class="poster"><h3>Use Smart, Live Safe!</h3><ol>
+        ${DATA.rules.map(r => `<li>${esc(r.pre)} <span class="hl">${esc(r.a)}</span> ${esc(r.post)}</li>`).join('')}
+        ${H.own.trim() ? `<li>We want everyone <span class="hl">${esc(H.own.trim())}</span>.</li>` : ''}</ol>
+        ${canSpeak?'<div><button class="mini" id="sayRules">▶ 규칙 듣기</button></div>':''}</div>
+        <button class="big" id="cleanBtn">모둠 활동 끝! 발자국 깨끗하게 지우기</button>` : '<p class="note">규칙 1~3의 빈칸을 모두 채우면 우리 모둠 포스터가 완성돼요.</p>'}
+      </div>
+      ${S.home ? `<div class="panel done-hero"><span class="hr">All Clean!</span><span>A, B, C 세 파트를 모아 Happy Digital Laundry 이야기를 완성했어요.</span><span class="note">맞힌 문제 ${S.stars}개</span></div>` : ''}`;
+    setTimeout(() => {
+      bindChoose(rl, H.rules, saveH, item => /^to /.test(item.a) ? 'want + 사람 다음에는 to + 동사원형!' : '본문에서 Happy Digital Laundry가 한 말을 떠올려 봐요.');
+      const o = document.getElementById('own'); if(o) o.onchange = () => { H.own = o.value; saveH(); draw(); };
+      const sr = document.getElementById('sayRules'); if(sr) sr.onclick = () => sayIt(DATA.rules.map(r => `${r.pre} ${r.a} ${r.post}`).join(' ') + (H.own.trim() ? ` We want everyone ${H.own.trim()}.` : ''));
+      const cb = document.getElementById('cleanBtn'); if(cb) cb.onclick = () => { S.home = true; saveS(); draw(); window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}); };
+    }, 0);
+  }
+  app.innerHTML = `${headBar('홈그룹 · Home Group')}
+    <div class="parthead"><span class="badge">Home</span><h1>세 사건을 모아 보고서 완성하기</h1></div>
+    ${stepsBar(HOME_STEPS, view.step, homeDone)}
+    ${body}
+    ${navBar(4)}`;
+  bindNav();
+  if(view.step === 0){
+    app.querySelectorAll('[data-show]').forEach(b => b.onclick = () => { const el = document.getElementById('show'+b.dataset.show); el.hidden = !el.hidden; });
+    app.querySelectorAll('[data-heard]').forEach(b => b.onclick = () => { H.heard[b.dataset.heard] = !H.heard[b.dataset.heard]; saveH(); draw(); });
+  }
+  if(view.step === 1) bindReport();
+  if(view.step === 3) bindVocab();
+}
+function homeDone(i){
+  if(i===0) return ORDER.every(p => H.heard[p]);
+  if(i===1) return DATA.report.every(r => r.items.every(it => H.rep[it.id]) && H.emo[r.p]);
+  if(i===2) return DATA.gramq.every((g,k) => H.gram['g'+k]);
+  if(i===3) return !!H.vocab.done;
+  return !!S.home;
+}
+function reportHTML(r){
+  let h = `<div class="rbox" style="--c:var(${PCOLOR[r.p]})"><h3><span>Part ${r.p}</span>${esc(r.title)}</h3>`;
+  r.items.forEach(it => {
+    const v = H.rep[it.id];
+    const blank = `<span class="blank ${v?'ok':''}">${v?esc(it.a):'?'}</span>`;
+    h += `<div class="fill"><span class="p ${it.en?'en':''}">${esc(it.pre).replace('(  )', blank)}</span>
+      ${v ? '' : `<div class="opts">${mix(it.o).map(o => `<button class="opt ${it.en?'en':''}" data-rep="${it.id}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>`}</div>`;
+  });
+  const e = H.emo[r.p];
+  h += `<div class="fill"><span>${esc(r.emoq)}: <span class="blank ${e?'ok':''}">${e?esc(e):'?'}</span></span>
+    ${e ? '' : `<div class="opts">${DATA.emotions.map(x => `<button class="opt" data-emo="${r.p}" data-v="${x[0]}"><span class="en">${x[0]}</span> ${x[1]}</button>`).join('')}</div>`}</div>`;
+  return h + '</div>';
+}
+function bindReport(){
+  const items = {}; DATA.report.forEach(r => r.items.forEach(it => items[it.id] = it));
+  const emo = {}; DATA.report.forEach(r => emo[r.p] = r.emo);
+  app.querySelectorAll('[data-rep]').forEach(b => b.onclick = () => {
+    const it = items[b.dataset.rep];
+    if(b.dataset.v === it.a){ b.classList.add('right'); H.rep[it.id] = true; S.stars++; saveS(); saveH(); setTimeout(draw, 300); }
+    else shake(b);
+  });
+  app.querySelectorAll('[data-emo]').forEach(b => b.onclick = () => {
+    if(b.dataset.v === emo[b.dataset.emo]){ b.classList.add('right'); H.emo[b.dataset.emo] = b.dataset.v; S.stars++; saveS(); saveH(); setTimeout(draw, 300); }
+    else shake(b);
+  });
+}
+function vocabHTML(){
+  const V = DATA.vocabq, vs = H.vocab;
+  if(!vs.order) { vs.order = mix(V.map((v,i)=>i)); saveH(); }
+  if(vs.done) return `<div class="done-hero" style="display:flex;flex-direction:column;gap:6px"><span class="hr" style="font-size:1.4rem">${vs.score} / ${V.length}</span>
+    <span>한 번에 맞힌 단어 수예요.</span><button class="mini" id="vAgain">다시 풀기</button></div>`;
+  const idx = vs.order[vs.i], v = V[idx];
+  const others = mix(V.map((x,i)=>i).filter(i => i!==idx)).slice(0,3);
+  return `<div class="meter"><i style="width:${vs.i/V.length*100}%"></i></div>
+    <div class="vq"><span class="note">${vs.i+1} / ${V.length}</span><span class="def">${esc(v[0])}</span><span style="color:var(--pc)">${esc(v[1])}</span>
+    <div class="opts">${mix([idx, ...others]).map(i => `<button class="opt en" data-voc="${i}">${esc(V[i][2])}</button>`).join('')}</div><p class="fb" id="fbv"></p></div>`;
+}
+function bindVocab(){
+  const vs = H.vocab, V = DATA.vocabq; let missed = false;
+  const ag = document.getElementById('vAgain'); if(ag) ag.onclick = () => { H.vocab = {i:0, score:0, done:false, order:null}; saveH(); draw(); };
+  app.querySelectorAll('[data-voc]').forEach(b => b.onclick = () => {
+    const idx = vs.order[vs.i];
+    if(+b.dataset.voc === idx){ b.classList.add('right'); if(!missed) vs.score++; sayIt(V[idx][2], 0.75);
+      setTimeout(() => { vs.i++; if(vs.i >= V.length) vs.done = true; saveH(); draw(); }, 420); }
+    else { missed = true; shake(b); const f = document.getElementById('fbv'); f.className='fb no'; f.textContent='다시 골라 봐요. 우리말 뜻이 힌트예요.'; }
+  });
+}
+draw();
+</script>
+
+</body></html>
